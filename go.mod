@@ -1,3 +1,3 @@
-module github.com/traefik/plugindemo
+module github.com/1cedsoda/traefik-umami-plugin
 
 go 1.19

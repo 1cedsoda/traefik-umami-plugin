@@ -1,8 +1,8 @@
-displayName: Demo Plugin
+displayName: Umami Plugin
 type: middleware
 iconPath: .assets/icon.png
 
-import: github.com/traefik/plugindemo
+import: github.com/1cedsoda/traefik-umami-plugin
 
 summary: '[Demo] Add Request Header'
 
