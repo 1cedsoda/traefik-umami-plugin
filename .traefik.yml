@@ -4,9 +4,16 @@ iconPath: .assets/icon.png
 
 import: github.com/1cedsoda/traefik-umami-plugin
 
-summary: '[Demo] Add Request Header'
+summary: 'Plugin for Umami Analytics'
 
 testData:
-  Headers:
-    X-Demo: test
-    X-URL: '{{URL}}'
+  forwardPath: umami
+  umamiHost: ""
+  websiteId: ""
+  autoTrack: true
+  doNotTrack: false
+  dataCache: false
+  dataDomains: []
+  evadeGoogleTagManager: false
+  injectScript: true
+

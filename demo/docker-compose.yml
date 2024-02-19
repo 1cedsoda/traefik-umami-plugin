@@ -18,9 +18,6 @@ services:
       - target: 8081
         published: 8081
         protocol: tcp
-      - target: 3000
-        published: 3000
-        protocol: tcp
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
@@ -53,13 +50,7 @@ services:
       - DATABASE_URL=postgres://umami:umami@postgres:5432/umami
     networks:
       - traefik
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.umami.loadbalancer.server.port=3000"
-      - "traefik.http.routers.umami.service=umami"
-      - "traefik.http.routers.umami.rule=Host(`localhost`)"
-      - "traefik.http.routers.umami.entrypoints=umami"
+      - umami_postgres
 
   postgres:
     image: postgres:16
@@ -68,9 +59,10 @@ services:
       - POSTGRES_DB=umami
       - POSTGRES_USER=umami
     networks:
-      - default
+      - umami_postgres
     volumes:
       - ./postgres:/var/lib/postgresql/data
 
 networks:
   traefik:
+  umami_postgres:

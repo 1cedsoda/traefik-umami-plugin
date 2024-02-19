@@ -3,5 +3,6 @@ http:
     umami:
       plugin:
         traefik-umami-plugin:
-          headers:
-            Test: Test
+          forwardPath: umami
+          umamiHost: http://umami:3000
+          websiteId: "1"
