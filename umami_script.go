@@ -22,7 +22,7 @@ func injectIntoHeader(bytes []byte, script string) []byte {
 
 // builds the umami script
 func buildUmamiScript(config *Config) (string, error) {
-	if config.InjectScript == false {
+	if config.ScriptInjection == false {
 		return "", nil
 	}
 	src := fmt.Sprintf(`/%s/script.js`, config.ForwardPath)
@@ -35,9 +35,9 @@ func buildUmamiScript(config *Config) (string, error) {
 		html += fmt.Sprintf("el.setAttribute('data-website-id', '%s');", config.WebsiteId)
 		html += fmt.Sprintf("el.setAttribute('data-auto-track', '%t');", config.AutoTrack)
 		html += fmt.Sprintf("el.setAttribute('data-do-not-track', '%t');", config.DoNotTrack)
-		html += fmt.Sprintf("el.setAttribute('data-cache', '%t');", config.DataCache)
-		if len(config.DataDomains) > 0 {
-			html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(config.DataDomains, ","))
+		html += fmt.Sprintf("el.setAttribute('data-cache', '%t');", config.Cache)
+		if len(config.Domains) > 0 {
+			html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(config.Domains, ","))
 		}
 		html += "el.setAttribute('data-do-not-track', 'true');"
 		if config.AutoTrack {
@@ -55,9 +55,9 @@ func buildUmamiScript(config *Config) (string, error) {
 		html += fmt.Sprintf(" data-website-id='%s'", config.WebsiteId)
 		html += fmt.Sprintf(" data-auto-track='%t'", config.AutoTrack)
 		html += fmt.Sprintf(" data-do-not-track='%t'", config.DoNotTrack)
-		html += fmt.Sprintf(" data-cache='%t'", config.DataCache)
-		if len(config.DataDomains) > 0 {
-			html += fmt.Sprintf(" data-domains='%s'", strings.Join(config.DataDomains, ","))
+		html += fmt.Sprintf(" data-cache='%t'", config.Cache)
+		if len(config.Domains) > 0 {
+			html += fmt.Sprintf(" data-domains='%s'", strings.Join(config.Domains, ","))
 		}
 		html += "></script>"
 	}

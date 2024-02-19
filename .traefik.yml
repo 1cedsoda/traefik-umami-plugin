@@ -12,8 +12,8 @@ testData:
   websiteId: ""
   autoTrack: true
   doNotTrack: false
-  dataCache: false
-  dataDomains: []
+  cache: false
+  domains: []
   evadeGoogleTagManager: false
-  injectScript: true
+  scriptInjection: true
 

@@ -19,10 +19,10 @@ type Config struct {
 	WebsiteId             string   `json:"websiteId"`
 	AutoTrack             bool     `json:"autoTrack"`
 	DoNotTrack            bool     `json:"doNotTrack"`
-	DataCache             bool     `json:"dataCache"`
-	DataDomains           []string `json:"dataDomains"`
+	Cache                 bool     `json:"cache"`
+	Domains               []string `json:"domains"`
 	EvadeGoogleTagManager bool     `json:"evadeGoogleTagManager"`
-	InjectScript          bool     `json:"injectScript"`
+	ScriptInjection       bool     `json:"scriptInjection"`
 }
 
 // CreateConfig creates the default plugin configuration.
@@ -33,10 +33,10 @@ func CreateConfig() *Config {
 		WebsiteId:             "",
 		AutoTrack:             true,
 		DoNotTrack:            false,
-		DataCache:             false,
-		DataDomains:           []string{},
+		Cache:                 false,
+		Domains:               []string{},
 		EvadeGoogleTagManager: false,
-		InjectScript:          true,
+		ScriptInjection:       true,
 	}
 }
 
@@ -83,10 +83,10 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	configJSON, _ := json.Marshal(config)
 	pluginHandler.log(fmt.Sprintf("config: %s", configJSON))
-	if config.InjectScript {
+	if config.ScriptInjection {
 		pluginHandler.log(fmt.Sprintf("script: %s", scriptHtml))
 	} else {
-		pluginHandler.log("script: injectScript is false")
+		pluginHandler.log("script: scriptInjection is false")
 	}
 
 	return pluginHandler, nil
@@ -115,7 +115,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// script injection
-	if h.config.InjectScript {
+	if h.config.ScriptInjection {
 		// intercept body
 		rxrw := &responseWriter{
 			buffer:         &bytes.Buffer{},
