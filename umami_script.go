@@ -2,12 +2,22 @@ package traefik_umami_plugin
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
+const headRegexPattern = `</head>`
+
+var headRx = regexp.MustCompile(headRegexPattern)
+
 // injects the umami script into the response head
-func injectIntoHeader(rw *MyResponseWriter, script *string) {
-	rw.RegexReplaceBody(`</head>`, *script+`</head>`)
+func injectIntoHeader(bytes []byte, script string) []byte {
+	rx := headRx.FindIndex(bytes)
+	if len(rx) == 0 {
+		return bytes
+	}
+	// insert the script before the head tag
+	return append(bytes[:rx[0]], append([]byte(script), bytes[rx[0]:]...)...)
 }
 
 // builds the umami script

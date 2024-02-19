@@ -6,3 +6,24 @@ http:
           forwardPath: umami
           umamiHost: http://umami:3000
           websiteId: "1"
+
+    plain-to-html-body:
+      plugin:
+        rewrite-body:
+          lastModified: true
+          rewrites:
+            - regex: \n
+              replacement: "$1<br>"
+            - regex: ([\S\s]*)
+              replacement: "<!DOCTYPE html><html><head></head><body>$1</body></html>"
+
+    plain-to-html-header:
+      headers:
+        customResponseHeaders:
+          Content-Type: "text/html"
+          
+    plain-to-html:
+      chain:
+        middlewares:
+          - plain-to-html-body
+          - plain-to-html-header

@@ -38,7 +38,8 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`localhost`)"
       - "traefik.http.routers.whoami.entrypoints=whoami"
       # middleware
-      - "traefik.http.routers.whoami.middlewares=umami@file"
+      - "traefik.http.routers.whoami.middlewares=umami@file,plain-to-html@file"
+
     networks:
       - traefik
 

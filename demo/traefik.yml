@@ -28,4 +28,7 @@ experimental:
   localPlugins:
     traefik-umami-plugin:
       moduleName: "github.com/1cedsoda/traefik-umami-plugin"
-  
+  plugins:
+    rewrite-body:
+      moduleName: "github.com/packruler/rewrite-body"
+      version: "v1.2.0" 

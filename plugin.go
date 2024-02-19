@@ -2,6 +2,7 @@
 package traefik_umami_plugin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -68,9 +69,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	//set http client
 	client := &http.Client{
-		CheckRedirect: func(r *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
 		Timeout: 30 * time.Second,
 	}
 
@@ -104,27 +102,44 @@ func (h *PluginHandler) log(message string) {
 }
 
 func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	// h.log(fmt.Sprintf("serve http %s", req.URL.EscapedPath()))
+	h.log(fmt.Sprintf("serve http %s", req.URL.EscapedPath()))
+
+	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
+
+	// forwarding
+	if shouldForwardToUmami {
+		h.log(fmt.Sprintf("shouldForwardToUmami: %t", shouldForwardToUmami))
+		h.log(fmt.Sprintf("pathAfter: %s", pathAfter))
+		h.forwardToUmami(rw, req, pathAfter)
+		return
+	}
+
+	// script injection
+	if h.config.InjectScript {
+		// intercept body
+		rxrw := &responseWriter{
+			buffer:         &bytes.Buffer{},
+			ResponseWriter: rw,
+		}
+		h.next.ServeHTTP(rxrw, req)
+
+		if rw.Header().Get("Content-Type") == "text/html" {
+			bytes := rxrw.buffer.Bytes()
+			newBytes := injectIntoHeader(bytes, h.scriptHtml)
+			rw.Write(newBytes)
+		}
+		return
+	}
+
 	h.next.ServeHTTP(rw, req)
-	// shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
-	// h.log(fmt.Sprintf("shouldForwardToUmami: %t", shouldForwardToUmami))
-	// h.log(fmt.Sprintf("pathAfter: %s", pathAfter))
-	// if shouldForwardToUmami {
-	// 	log.Println("forwarding to umami")
-	// 	h.forwardToUmami(rw, req, pathAfter)
-	// 	return
-	// }
-	// if h.config.InjectScript {
-	// 	h.log("injecting script?")
-	// 	writer := &MyResponseWriter{
-	// 		buffer:         &bytes.Buffer{},
-	// 		ResponseWriter: rw,
-	// 	}
-	// 	h.next.ServeHTTP(writer, req)
-	// 	// if content type is text/html
-	// 	if req.Header.Get("Content-Type") == "text/html" {
-	// 		injectIntoHeader(writer, &h.scriptHtml)
-	// 		h.log("injecting script!")
-	// 	}
-	// }
+}
+
+type responseWriter struct {
+	buffer *bytes.Buffer
+	http.ResponseWriter
+}
+
+func (w *responseWriter) Write(p []byte) (int, error) {
+	w.buffer.Reset()
+	return w.buffer.Write(p)
 }
