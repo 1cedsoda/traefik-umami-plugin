@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    umami:
+      plugin:
+        traefik-umami-plugin:
+          headers:
+            Test: Test
