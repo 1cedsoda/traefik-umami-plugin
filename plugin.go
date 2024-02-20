@@ -23,6 +23,7 @@ type Config struct {
 	Domains               []string `json:"domains"`
 	EvadeGoogleTagManager bool     `json:"evadeGoogleTagManager"`
 	ScriptInjection       bool     `json:"scriptInjection"`
+	ScriptInjectionMode   string   `json:"scriptInjectionMode"`
 }
 
 // CreateConfig creates the default plugin configuration.
@@ -37,6 +38,7 @@ func CreateConfig() *Config {
 		Domains:               []string{},
 		EvadeGoogleTagManager: false,
 		ScriptInjection:       true,
+		ScriptInjectionMode:   "tag",
 	}
 }
 
@@ -60,25 +62,26 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	if config.WebsiteId == "" {
 		return nil, fmt.Errorf("website id is not set")
 	}
-
-	// build script html
-	scriptHtml, err := buildUmamiScript(config)
-	if err != nil {
-		return nil, err
+	// check if scriptInjectionMode is valid
+	if config.ScriptInjectionMode != "tag" && config.ScriptInjectionMode != "source" {
+		return nil, fmt.Errorf("scriptInjectionMode is not valid")
 	}
 
-	//set http client
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
+	// construct
 	pluginHandler := &PluginHandler{
 		next:       next,
 		name:       name,
 		config:     *config,
-		scriptHtml: scriptHtml,
+		scriptHtml: "",
 		LogHandler: log.New(os.Stdout, "", 0),
-		client:     client,
+		client:     &http.Client{},
+	}
+
+	// build script html
+	scriptHtml, err := pluginHandler.buildUmamiScript()
+	pluginHandler.scriptHtml = scriptHtml
+	if err != nil {
+		return nil, err
 	}
 
 	configJSON, _ := json.Marshal(config)
@@ -124,7 +127,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if myrw.Header().Get("Content-Type") == "text/html" {
 			h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
 			bytes := myrw.buffer.Bytes()
-			newBytes := regexReplaceSingle(bytes, headRegexp, h.scriptHtml)
+			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
 			rw.Write(newBytes)
 		}
 		return

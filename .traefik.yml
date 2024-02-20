@@ -16,4 +16,5 @@ testData:
   domains: []
   evadeGoogleTagManager: false
   scriptInjection: true
+  scriptInjectionMode: "tag"
 
