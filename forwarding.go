@@ -89,7 +89,7 @@ func removeHeaders(headers http.Header, names ...string) {
 	}
 }
 
-func writeXForwardedHeaders(dst http.Header, req *http.Request) { // nolint:gocyclo
+func writeXForwardedHeaders(dst http.Header, req *http.Request) {
 	if clientIP, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
 		if values := req.Header.Values(xForwardedFor); len(values) > 0 {
 			clientIP = strings.Join(values, ", ") + ", " + clientIP

@@ -10,7 +10,7 @@ import (
 
 // check if the requested URL should be forwaeded to umami
 // based on the ForwardPath (eg. /umami)
-// only forwards /api/send and /script.js
+// only forwards /api/send and /script.js.
 func isUmamiForwardPath(req *http.Request, config *Config) (bool, string) {
 	currentPath := req.URL.EscapedPath()
 	pathRegex := fmt.Sprintf(`\/%s\/((?:script\.js)|(?:api\/send))`, config.ForwardPath)
@@ -23,7 +23,7 @@ func isUmamiForwardPath(req *http.Request, config *Config) (bool, string) {
 }
 
 // build the new URL to umami
-// based on the UmamiHost and pathAfter
+// based on the UmamiHost and pathAfter.
 func (h *PluginHandler) getForwardUrl(pathAfter string) (string, error) {
 	// return path.Join(config.UmamiConfig.UmamiHost, pathAfter)
 	urlString := fmt.Sprintf("%s/%s", h.config.UmamiHost, pathAfter)
@@ -35,7 +35,7 @@ func (h *PluginHandler) getForwardUrl(pathAfter string) (string, error) {
 
 // forward the incoming request to umami
 // if not 2XX, shortcut and return forward response
-// if 2XX, continue to next handler
+// if 2XX, continue to next handler.
 func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request, pathAfter string) {
 	// build URL
 	forwardUrl, err := h.getForwardUrl(pathAfter)

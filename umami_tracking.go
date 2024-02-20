@@ -39,7 +39,7 @@ func buildSendPayload(req *http.Request, websiteId string) SendPayload {
 
 func parseAcceptLanguage(acceptLanguage string) string {
 	const parseAcceptLanguagePattern = `([a-zA-Z\-]+)(?:;q=\d\.\d)?(?:,\s)?`
-	var parseAcceptLanguageRegexp = regexp.MustCompile(parseAcceptLanguagePattern)
+	parseAcceptLanguageRegexp := regexp.MustCompile(parseAcceptLanguagePattern)
 	matches := parseAcceptLanguageRegexp.FindAllStringSubmatch(acceptLanguage, -1)
 	if len(matches) == 0 {
 		return ""
@@ -63,7 +63,7 @@ func buildTrackingRequest(clientReq *http.Request, config *Config) (*http.Reques
 	url := fmt.Sprintf("%s/api/send", config.UmamiHost)
 
 	// build request
-	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bodyReader)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bodyReader)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func buildTrackingRequest(clientReq *http.Request, config *Config) (*http.Reques
 	return req, nil
 }
 
-// send the tracking request to umami's /api/send
+// send the tracking request to umami's /api/send.
 func (h *PluginHandler) sendTrackingRequest(trackingReq *http.Request) error {
 	// make request
 	trackingRes, err := h.client.Do(trackingReq)
@@ -94,7 +94,7 @@ func (h *PluginHandler) sendTrackingRequest(trackingReq *http.Request) error {
 	return nil
 }
 
-// opts the port from the host
+// opts the port from the host.
 func parseDomainFromHost(host string) string {
 	// check if the host has a port
 	if strings.Contains(host, ":") {
@@ -104,7 +104,7 @@ func parseDomainFromHost(host string) string {
 }
 
 // check if the requested domain is in the list of domains
-// if the list is empty, return true
+// if the list is empty, return true.
 func hostnameInDomains(req *http.Request, domains []string) bool {
 	if len(domains) == 0 {
 		return true
@@ -118,7 +118,7 @@ func hostnameInDomains(req *http.Request, domains []string) bool {
 	return false
 }
 
-// check if server side tracking should be done
+// check if server side tracking should be done.
 func shouldServerSideTrack(req *http.Request, config *Config) bool {
 	if config.ServerSideTracking && hostnameInDomains(req, config.Domains) {
 		return true

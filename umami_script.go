@@ -14,7 +14,7 @@ const insertBeforeRegexPattern = `</body>`
 
 var insertBeforeRegex = regexp.MustCompile(insertBeforeRegexPattern)
 
-// injects the umami script into the response head
+// injects the umami script into the response head.
 func regexReplaceSingle(bytes []byte, match *regexp.Regexp, replace string) []byte {
 	rx := match.FindIndex(bytes)
 	if len(rx) == 0 {
@@ -24,7 +24,7 @@ func regexReplaceSingle(bytes []byte, match *regexp.Regexp, replace string) []by
 	return append(bytes[:rx[0]], append([]byte(replace), bytes[rx[0]:]...)...)
 }
 
-// builds the umami script
+// builds the umami script.
 func (h *PluginHandler) buildUmamiScript() (string, error) {
 	// check if the script should be injected
 	if h.config.ScriptInjection == false {
@@ -33,7 +33,7 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 
 	// download the script
 	var scriptJs string
-	if h.config.ScriptInjectionMode == "source" {
+	if h.config.ScriptInjectionMode == ModeSource {
 		_scriptJs, err := h.downloadScript(&h.config, context.Background())
 		if err != nil {
 			return "", err
@@ -43,81 +43,85 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 
 	// src url
 	var src string
-	if h.config.ScriptInjectionMode == "tag" {
+	if h.config.ScriptInjectionMode == ModeTag {
 		src = fmt.Sprintf(`/%s/script.js`, h.config.ForwardPath)
 	}
 
-	html := ""
 	if h.config.EvadeGoogleTagManager {
-		html += "<script>"
-		html += "(function () {"
-		html += "var el = document.createElement('script');"
-		html += fmt.Sprintf("el.setAttribute('data-host-url', '%s');", h.config.ForwardPath)
-		if h.config.ScriptInjectionMode == "tag" {
-			html += fmt.Sprintf("el.setAttribute('src', '%s');", src)
-		} else if h.config.ScriptInjectionMode == "source" {
-			scriptBase64 := base64.StdEncoding.EncodeToString([]byte(scriptJs))
-			html += "el.setAttribute('type', 'text/javascript');"
-			html += fmt.Sprintf("el.innerHTML = atob('%s');", scriptBase64)
-		}
-		html += fmt.Sprintf("el.setAttribute('data-website-id', '%s');", h.config.WebsiteId)
-		if h.config.AutoTrack {
-			html += "el.setAttribute('data-auto-track', 'true');"
-		} else {
-			html += "el.setAttribute('data-auto-track', 'false');"
-		}
-		if h.config.DoNotTrack {
-			html += "el.setAttribute('data-do-not-track', 'true');"
-		}
-		if h.config.Cache {
-			html += "el.setAttribute('data-cache', 'true');"
-		}
-		if len(h.config.Domains) > 0 {
-			html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(h.config.Domains, ","))
-		}
-		html += "document.body.appendChild(el);"
-		html += "})();"
-		html += "</script>"
+		return buildUmamiScriptWithEvade(&h.config, scriptJs, src), nil
+	} else {
+		return buildUmamiScriptWithoutEvade(&h.config, scriptJs, src), nil
 	}
+}
 
-	if !h.config.EvadeGoogleTagManager {
-		html += "<script"
-		html += " async"
-		html += " defer"
-		html += fmt.Sprintf(" data-host-url='/%s'", h.config.ForwardPath)
-		if h.config.ScriptInjectionMode == "tag" {
-			html += fmt.Sprintf(" src='%s'", src)
-		}
-		html += fmt.Sprintf(" data-website-id='%s'", h.config.WebsiteId)
-		if h.config.AutoTrack {
-			html += " data-auto-track='true'"
-		} else {
-			html += " data-auto-track='false'"
-		}
-		if h.config.DoNotTrack {
-			html += " data-do-not-track='true'"
-		}
-		if h.config.Cache {
-			html += " data-cache='true'"
-		}
-		if len(h.config.Domains) > 0 {
-			html += fmt.Sprintf(" data-domains='%s'", strings.Join(h.config.Domains, ","))
-		}
-		html += ">"
-		if h.config.ScriptInjectionMode == "source" {
-			html += scriptJs
-		}
-		html += "</script>"
+func buildUmamiScriptWithEvade(config *Config, scriptJs, src string) string {
+	html := "<script>"
+	html += "(function () {"
+	html += "var el = document.createElement('script');"
+	html += fmt.Sprintf("el.setAttribute('data-host-url', '%s');", config.ForwardPath)
+	if config.ScriptInjectionMode == ModeTag {
+		html += fmt.Sprintf("el.setAttribute('src', '%s');", src)
+	} else if config.ScriptInjectionMode == ModeSource {
+		scriptBase64 := base64.StdEncoding.EncodeToString([]byte(scriptJs))
+		html += "el.setAttribute('type', 'text/javascript');"
+		html += fmt.Sprintf("el.innerHTML = atob('%s');", scriptBase64)
 	}
+	html += fmt.Sprintf("el.setAttribute('data-website-id', '%s');", config.WebsiteId)
+	if config.AutoTrack {
+		html += "el.setAttribute('data-auto-track', 'true');"
+	} else {
+		html += "el.setAttribute('data-auto-track', 'false');"
+	}
+	if config.DoNotTrack {
+		html += "el.setAttribute('data-do-not-track', 'true');"
+	}
+	if config.Cache {
+		html += "el.setAttribute('data-cache', 'true');"
+	}
+	if len(config.Domains) > 0 {
+		html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(config.Domains, ","))
+	}
+	html += "document.body.appendChild(el);"
+	html += "})();"
+	html += "</script>"
+	return html
+}
 
-	return html, nil
+func buildUmamiScriptWithoutEvade(config *Config, scriptJs, src string) string {
+	html := "<script"
+	html += " async"
+	html += " defer"
+	html += fmt.Sprintf(" data-host-url='/%s'", config.ForwardPath)
+	if config.ScriptInjectionMode == ModeTag {
+		html += fmt.Sprintf(" src='%s'", src)
+	}
+	html += fmt.Sprintf(" data-website-id='%s'", config.WebsiteId)
+	if config.AutoTrack {
+		html += " data-auto-track='true'"
+	} else {
+		html += " data-auto-track='false'"
+	}
+	if config.DoNotTrack {
+		html += " data-do-not-track='true'"
+	}
+	if config.Cache {
+		html += " data-cache='true'"
+	}
+	if len(config.Domains) > 0 {
+		html += fmt.Sprintf(" data-domains='%s'", strings.Join(config.Domains, ","))
+	}
+	html += ">"
+	if config.ScriptInjectionMode == ModeSource {
+		html += scriptJs
+	}
+	html += "</script>"
+	return html
 }
 
 func (h *PluginHandler) downloadScript(config *Config, ctx context.Context) (string, error) {
-
 	// request
 	url := fmt.Sprintf("%s/script.js", config.UmamiHost)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}

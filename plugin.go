@@ -39,10 +39,15 @@ func CreateConfig() *Config {
 		Domains:               []string{},
 		EvadeGoogleTagManager: false,
 		ScriptInjection:       true,
-		ScriptInjectionMode:   "tag",
+		ScriptInjectionMode:   ModeTag,
 		ServerSideTracking:    false,
 	}
 }
+
+const (
+	ModeTag    = "tag"
+	ModeSource = "source"
+)
 
 // PluginHandler a PluginHandler plugin.
 type PluginHandler struct {
@@ -65,7 +70,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		return nil, fmt.Errorf("website id is not set")
 	}
 	// check if scriptInjectionMode is valid
-	if config.ScriptInjectionMode != "tag" && config.ScriptInjectionMode != "source" {
+	if config.ScriptInjectionMode != ModeTag && config.ScriptInjectionMode != ModeSource {
 		return nil, fmt.Errorf("scriptInjectionMode is not valid")
 	}
 
@@ -107,7 +112,6 @@ func (h *PluginHandler) log(message string) {
 }
 
 func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-
 	// forwarding
 	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
 	if shouldForwardToUmami {
