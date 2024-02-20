@@ -148,6 +148,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			buffer:         &bytes.Buffer{},
 			ResponseWriter: rw,
 		}
+		myrw.Header().Set("Accept-Encoding", "identity")
 		h.next.ServeHTTP(myrw, req)
 
 		if myrw.Header().Get("Content-Type") == "text/html" {

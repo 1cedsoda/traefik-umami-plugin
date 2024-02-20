@@ -27,12 +27,12 @@ experimental:
   plugins:
     traefik-umami-plugin:
       moduleName: "github.com/1cedsoda/traefik-umami-plugin"
-      version: "v1.0.1" 
+      version: "v1.0.2" 
 ```
 ```toml
 [experimental.plugins.traefik-umami-plugin]
   moduleName = "github.com/1cedsoda/traefik-umami-plugin"
-  version = "v1.0.1"
+  version = "v1.0.2"
 ```
 With the plugin installed, you can configure a middleware in a dynamic configuration such as a `config.yml` or docker labels.
 Inside `traefik-umami-plugin` the plugin can be configured.

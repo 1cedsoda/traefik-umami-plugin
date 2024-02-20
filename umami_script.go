@@ -127,7 +127,7 @@ func downloadScript(config *Config, ctx context.Context) (string, error) {
 	}
 	req.Header.Set("User-Agent", "traefik-umami-plugin")
 	req.Header.Set("Accept", "application/javascript")
-	req.Header.Set("Accept-Encoding", "utf-8")
+	req.Header.Set("Accept-Encoding", "identity")
 
 	// make request
 	client := &http.Client{}
