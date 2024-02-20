@@ -33,17 +33,18 @@ func buildUmamiScript(config *Config) (string, error) {
 		html += "var el = document.createElement('script');"
 		html += fmt.Sprintf("el.setAttribute('src', '%s');", src)
 		html += fmt.Sprintf("el.setAttribute('data-website-id', '%s');", config.WebsiteId)
-		html += fmt.Sprintf("el.setAttribute('data-auto-track', '%t');", config.AutoTrack)
-		html += fmt.Sprintf("el.setAttribute('data-do-not-track', '%t');", config.DoNotTrack)
-		html += fmt.Sprintf("el.setAttribute('data-cache', '%t');", config.Cache)
-		if len(config.Domains) > 0 {
-			html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(config.Domains, ","))
-		}
-		html += "el.setAttribute('data-do-not-track', 'true');"
 		if config.AutoTrack {
 			html += "el.setAttribute('data-auto-track', 'true');"
 		}
-
+		if config.DoNotTrack {
+			html += "el.setAttribute('data-do-not-track', 'true');"
+		}
+		if config.Cache {
+			html += "el.setAttribute('data-cache', 'true');"
+		}
+		if len(config.Domains) > 0 {
+			html += fmt.Sprintf("el.setAttribute('data-domains', '%s');", strings.Join(config.Domains, ","))
+		}
 		html += "document.body.appendChild(el);"
 		html += "})();"
 		html += "</script>"
@@ -53,9 +54,15 @@ func buildUmamiScript(config *Config) (string, error) {
 		html += " defer"
 		html += fmt.Sprintf(" src='%s'", src)
 		html += fmt.Sprintf(" data-website-id='%s'", config.WebsiteId)
-		html += fmt.Sprintf(" data-auto-track='%t'", config.AutoTrack)
-		html += fmt.Sprintf(" data-do-not-track='%t'", config.DoNotTrack)
-		html += fmt.Sprintf(" data-cache='%t'", config.Cache)
+		if config.AutoTrack {
+			html += " data-auto-track='true'"
+		}
+		if config.DoNotTrack {
+			html += " data-do-not-track='true'"
+		}
+		if config.Cache {
+			html += " data-cache='true'"
+		}
 		if len(config.Domains) > 0 {
 			html += fmt.Sprintf(" data-domains='%s'", strings.Join(config.Domains, ","))
 		}

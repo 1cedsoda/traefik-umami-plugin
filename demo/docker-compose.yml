@@ -49,6 +49,10 @@ services:
       - postgres
     environment:
       - DATABASE_URL=postgres://umami:umami@postgres:5432/umami
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
     networks:
       - traefik
       - umami_postgres

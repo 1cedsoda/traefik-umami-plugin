@@ -5,7 +5,7 @@ http:
         traefik-umami-plugin:
           forwardPath: umami
           umamiHost: http://umami:3000
-          websiteId: "1"
+          websiteId: "798edb2f-b009-497b-bf5b-f3d7c6c8dc05"
 
     plain-to-html-body:
       plugin:
