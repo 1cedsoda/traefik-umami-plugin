@@ -18,4 +18,5 @@ testData:
   scriptInjection: true
   scriptInjectionMode: "tag"
   serverSideTracking: false
+  serverSideTrackingMode: "all"
 

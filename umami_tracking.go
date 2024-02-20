@@ -37,9 +37,11 @@ func buildSendPayload(req *http.Request, websiteId string) SendPayload {
 	}
 }
 
+const parseAcceptLanguagePattern = `([a-zA-Z\-]+)(?:;q=\d\.\d)?(?:,\s)?`
+
+var parseAcceptLanguageRegexp = regexp.MustCompile(parseAcceptLanguagePattern)
+
 func parseAcceptLanguage(acceptLanguage string) string {
-	const parseAcceptLanguagePattern = `([a-zA-Z\-]+)(?:;q=\d\.\d)?(?:,\s)?`
-	parseAcceptLanguageRegexp := regexp.MustCompile(parseAcceptLanguagePattern)
 	matches := parseAcceptLanguageRegexp.FindAllStringSubmatch(acceptLanguage, -1)
 	if len(matches) == 0 {
 		return ""
@@ -78,17 +80,17 @@ func buildTrackingRequest(clientReq *http.Request, config *Config) (*http.Reques
 }
 
 // send the tracking request to umami's /api/send.
-func (h *PluginHandler) sendTrackingRequest(trackingReq *http.Request) error {
+func sendTrackingRequest(trackingReq *http.Request) error {
 	// make request
-	trackingRes, err := h.client.Do(trackingReq)
+	client := &http.Client{}
+	trackingRes, err := client.Do(trackingReq)
 	if err != nil {
-		h.log(fmt.Sprintf("Error: %s", err))
 		return err
 	}
 
 	status := trackingRes.StatusCode
 	if status < 200 || status >= 300 {
-		h.log(fmt.Sprintf("Tracking request status: %d", status))
+		return fmt.Errorf("tracking request failed with status %d", status)
 	}
 
 	return nil
@@ -119,9 +121,32 @@ func hostnameInDomains(req *http.Request, domains []string) bool {
 }
 
 // check if server side tracking should be done.
-func shouldServerSideTrack(req *http.Request, config *Config) bool {
+func shouldServerSideTrack(req *http.Request, config *Config, injected bool, h *PluginHandler) bool {
 	if config.ServerSideTracking && hostnameInDomains(req, config.Domains) {
+		h.log("server side tracking enabled, domain is in the list")
+		h.log(fmt.Sprintf("server side tracking mode: %s", config.ServerSideTrackingMode))
+		if config.ServerSideTrackingMode == SSTModeNotinjected {
+			h.log("server side tracking mode is notinjected")
+			h.log(fmt.Sprintf("tracking: %t", !injected))
+			return !injected
+		}
 		return true
 	}
 	return false
+}
+
+func buildAndSendTrackingRequest(req *http.Request, config *Config) error {
+	// build tracking request
+	trackingReq, err := buildTrackingRequest(req, config)
+	if err != nil {
+		return err
+	}
+
+	// send tracking request
+	err = sendTrackingRequest(trackingReq)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

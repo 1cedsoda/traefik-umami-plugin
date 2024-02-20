@@ -59,6 +59,7 @@ http:
             - "example.com"
           evadeGoogleTagManager: false
           serverSideTracking: false
+          serverSideTrackingMode: "all"
 ```
 ```toml
 [http.middlewares]
@@ -132,6 +133,12 @@ Tracked events have the name `traefik`.
 
 The `domains` configuration is considered for SST as well. If domains is empty, all hosts are tracked, otherwise the host must be in the list. The port of the host is ignored.
 
-| key                  | default | type   | description                  |
-| -------------------- | ------- | ------ | ---------------------------- |
-| `serverSideTracking` | `false` | `bool` | Enables server side tracking |
+| key                      | default | type     | description                       |
+| ------------------------ | ------- | -------- | --------------------------------- |
+| `serverSideTracking`     | `false` | `bool`   | Enables server side tracking      |
+| `serverSideTrackingMode` | `all`   | `string` | `all` or `notinjected`. See below |
+
+The mode `notinjected` is useful if you want to use SST and script injection at the same time, but want to avoid double tracking. Perfect for full analytics coverage of your web service.
+There are two modes for server side tracking:
+- `all`: Tracks all requests
+- `notinjected`: Tracks all requests that have not been injected (always if `scriptInjection` is disabled)

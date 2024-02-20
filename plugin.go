@@ -14,39 +14,43 @@ import (
 
 // Config the plugin configuration.
 type Config struct {
-	ForwardPath           string   `json:"forwardPath"`
-	UmamiHost             string   `json:"umamiHost"`
-	WebsiteId             string   `json:"websiteId"`
-	AutoTrack             bool     `json:"autoTrack"`
-	DoNotTrack            bool     `json:"doNotTrack"`
-	Cache                 bool     `json:"cache"`
-	Domains               []string `json:"domains"`
-	EvadeGoogleTagManager bool     `json:"evadeGoogleTagManager"`
-	ScriptInjection       bool     `json:"scriptInjection"`
-	ScriptInjectionMode   string   `json:"scriptInjectionMode"`
-	ServerSideTracking    bool     `json:"serverSideTracking"`
+	ForwardPath            string   `json:"forwardPath"`
+	UmamiHost              string   `json:"umamiHost"`
+	WebsiteId              string   `json:"websiteId"`
+	AutoTrack              bool     `json:"autoTrack"`
+	DoNotTrack             bool     `json:"doNotTrack"`
+	Cache                  bool     `json:"cache"`
+	Domains                []string `json:"domains"`
+	EvadeGoogleTagManager  bool     `json:"evadeGoogleTagManager"`
+	ScriptInjection        bool     `json:"scriptInjection"`
+	ScriptInjectionMode    string   `json:"scriptInjectionMode"`
+	ServerSideTracking     bool     `json:"serverSideTracking"`
+	ServerSideTrackingMode string   `json:"serverSideTrackingMode"`
 }
 
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		ForwardPath:           "_umami",
-		UmamiHost:             "",
-		WebsiteId:             "",
-		AutoTrack:             true,
-		DoNotTrack:            false,
-		Cache:                 false,
-		Domains:               []string{},
-		EvadeGoogleTagManager: false,
-		ScriptInjection:       true,
-		ScriptInjectionMode:   ModeTag,
-		ServerSideTracking:    false,
+		ForwardPath:            "_umami",
+		UmamiHost:              "",
+		WebsiteId:              "",
+		AutoTrack:              true,
+		DoNotTrack:             false,
+		Cache:                  false,
+		Domains:                []string{},
+		EvadeGoogleTagManager:  false,
+		ScriptInjection:        true,
+		ScriptInjectionMode:    SIModeTag,
+		ServerSideTracking:     false,
+		ServerSideTrackingMode: SSTModeAll,
 	}
 }
 
 const (
-	ModeTag    = "tag"
-	ModeSource = "source"
+	SIModeTag          string = "tag"
+	SIModeSource       string = "source"
+	SSTModeAll         string = "all"
+	SSTModeNotinjected string = "notinjected"
 )
 
 // PluginHandler a PluginHandler plugin.
@@ -56,7 +60,6 @@ type PluginHandler struct {
 	config     Config
 	scriptHtml string
 	LogHandler *log.Logger
-	client     *http.Client
 }
 
 // New created a new Demo plugin.
@@ -70,8 +73,12 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		return nil, fmt.Errorf("website id is not set")
 	}
 	// check if scriptInjectionMode is valid
-	if config.ScriptInjectionMode != ModeTag && config.ScriptInjectionMode != ModeSource {
+	if config.ScriptInjectionMode != SIModeTag && config.ScriptInjectionMode != SIModeSource {
 		return nil, fmt.Errorf("scriptInjectionMode is not valid")
+	}
+	// check if serverSideTrackingMode is valid
+	if config.ServerSideTrackingMode != SSTModeAll && config.ServerSideTrackingMode != SSTModeNotinjected {
+		return nil, fmt.Errorf("serverSideTrackingMode is not valid")
 	}
 
 	// construct
@@ -81,11 +88,10 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		config:     *config,
 		scriptHtml: "",
 		LogHandler: log.New(os.Stdout, "", 0),
-		client:     &http.Client{},
 	}
 
 	// build script html
-	scriptHtml, err := pluginHandler.buildUmamiScript()
+	scriptHtml, err := buildUmamiScript(&pluginHandler.config)
 	pluginHandler.scriptHtml = scriptHtml
 	if err != nil {
 		return nil, err
@@ -120,18 +126,8 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// server side tracking
-	shouldServerSideTrack := shouldServerSideTrack(req, &h.config)
-	if shouldServerSideTrack {
-		h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
-		tReq, err := buildTrackingRequest(req, &h.config)
-		if err != nil {
-			h.log(fmt.Sprintf("h.buildTrackingRequest: %s", err))
-		}
-		h.sendTrackingRequest(tReq)
-	}
-
 	// script injection
+	var injected bool = false
 	if h.config.ScriptInjection {
 		// intercept body
 		myrw := &responseWriter{
@@ -145,12 +141,22 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			bytes := myrw.buffer.Bytes()
 			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
 			rw.Write(newBytes)
+			injected = true
 		}
-		return
 	}
 
-	h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
-	h.next.ServeHTTP(rw, req)
+	// server side tracking
+	shouldServerSideTrack := shouldServerSideTrack(req, &h.config, injected, h)
+	if shouldServerSideTrack {
+		h.log(fmt.Sprintf("injected: %t", injected))
+		h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
+		go buildAndSendTrackingRequest(req, &h.config)
+	}
+
+	if !injected {
+		h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
+		h.next.ServeHTTP(rw, req)
+	}
 }
 
 type responseWriter struct {

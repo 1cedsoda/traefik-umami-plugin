@@ -25,16 +25,16 @@ func regexReplaceSingle(bytes []byte, match *regexp.Regexp, replace string) []by
 }
 
 // builds the umami script.
-func (h *PluginHandler) buildUmamiScript() (string, error) {
+func buildUmamiScript(config *Config) (string, error) {
 	// check if the script should be injected
-	if h.config.ScriptInjection == false {
+	if config.ScriptInjection == false {
 		return "", nil
 	}
 
 	// download the script
 	var scriptJs string
-	if h.config.ScriptInjectionMode == ModeSource {
-		_scriptJs, err := h.downloadScript(&h.config, context.Background())
+	if config.ScriptInjectionMode == SIModeSource {
+		_scriptJs, err := downloadScript(config, context.Background())
 		if err != nil {
 			return "", err
 		}
@@ -43,14 +43,14 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 
 	// src url
 	var src string
-	if h.config.ScriptInjectionMode == ModeTag {
-		src = fmt.Sprintf(`/%s/script.js`, h.config.ForwardPath)
+	if config.ScriptInjectionMode == SIModeTag {
+		src = fmt.Sprintf(`/%s/script.js`, config.ForwardPath)
 	}
 
-	if h.config.EvadeGoogleTagManager {
-		return buildUmamiScriptWithEvade(&h.config, scriptJs, src), nil
+	if config.EvadeGoogleTagManager {
+		return buildUmamiScriptWithEvade(config, scriptJs, src), nil
 	} else {
-		return buildUmamiScriptWithoutEvade(&h.config, scriptJs, src), nil
+		return buildUmamiScriptWithoutEvade(config, scriptJs, src), nil
 	}
 }
 
@@ -59,9 +59,9 @@ func buildUmamiScriptWithEvade(config *Config, scriptJs, src string) string {
 	html += "(function () {"
 	html += "var el = document.createElement('script');"
 	html += fmt.Sprintf("el.setAttribute('data-host-url', '%s');", config.ForwardPath)
-	if config.ScriptInjectionMode == ModeTag {
+	if config.ScriptInjectionMode == SIModeTag {
 		html += fmt.Sprintf("el.setAttribute('src', '%s');", src)
-	} else if config.ScriptInjectionMode == ModeSource {
+	} else if config.ScriptInjectionMode == SIModeSource {
 		scriptBase64 := base64.StdEncoding.EncodeToString([]byte(scriptJs))
 		html += "el.setAttribute('type', 'text/javascript');"
 		html += fmt.Sprintf("el.innerHTML = atob('%s');", scriptBase64)
@@ -92,7 +92,7 @@ func buildUmamiScriptWithoutEvade(config *Config, scriptJs, src string) string {
 	html += " async"
 	html += " defer"
 	html += fmt.Sprintf(" data-host-url='/%s'", config.ForwardPath)
-	if config.ScriptInjectionMode == ModeTag {
+	if config.ScriptInjectionMode == SIModeTag {
 		html += fmt.Sprintf(" src='%s'", src)
 	}
 	html += fmt.Sprintf(" data-website-id='%s'", config.WebsiteId)
@@ -111,14 +111,14 @@ func buildUmamiScriptWithoutEvade(config *Config, scriptJs, src string) string {
 		html += fmt.Sprintf(" data-domains='%s'", strings.Join(config.Domains, ","))
 	}
 	html += ">"
-	if config.ScriptInjectionMode == ModeSource {
+	if config.ScriptInjectionMode == SIModeSource {
 		html += scriptJs
 	}
 	html += "</script>"
 	return html
 }
 
-func (h *PluginHandler) downloadScript(config *Config, ctx context.Context) (string, error) {
+func downloadScript(config *Config, ctx context.Context) (string, error) {
 	// request
 	url := fmt.Sprintf("%s/script.js", config.UmamiHost)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -130,16 +130,15 @@ func (h *PluginHandler) downloadScript(config *Config, ctx context.Context) (str
 	req.Header.Set("Accept-Encoding", "utf-8")
 
 	// make request
-	res, err := h.client.Do(req)
+	client := &http.Client{}
+	res, err := client.Do(req)
 	if err != nil {
-		h.log(fmt.Sprintf("h.client.Do: %+v", err))
 		return "", err
 	}
 
 	// read response
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		h.log(fmt.Sprintf("io.ReadAll: %+v", err))
 		return "", err
 	}
 

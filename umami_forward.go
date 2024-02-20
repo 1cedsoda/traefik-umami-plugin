@@ -54,7 +54,8 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	}
 
 	// make proxy request
-	proxyRes, err := h.client.Do(proxyReq)
+	client := &http.Client{}
+	proxyRes, err := client.Do(proxyReq)
 	if err != nil {
 		h.log(fmt.Sprintf("h.client.Do: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
