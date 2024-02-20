@@ -55,57 +55,65 @@ const (
 
 // PluginHandler a PluginHandler plugin.
 type PluginHandler struct {
-	next       http.Handler
-	name       string
-	config     Config
-	scriptHtml string
-	LogHandler *log.Logger
+	next          http.Handler
+	name          string
+	config        Config
+	configIsValid bool
+	scriptHtml    string
+	LogHandler    *log.Logger
 }
 
 // New created a new Demo plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
+	// construct
+	h := &PluginHandler{
+		next:          next,
+		name:          name,
+		config:        *config,
+		configIsValid: true,
+		scriptHtml:    "",
+		LogHandler:    log.New(os.Stdout, "", 0),
+	}
+
 	// check if the umami host is set
 	if config.UmamiHost == "" {
-		return nil, fmt.Errorf("umami host is not set")
+		h.log("umamiHost is not set!")
+		h.configIsValid = false
 	}
 	// check if the website id is set
 	if config.WebsiteId == "" {
-		return nil, fmt.Errorf("website id is not set")
+		h.log("websiteId is not set!")
+		h.configIsValid = false
 	}
 	// check if scriptInjectionMode is valid
 	if config.ScriptInjectionMode != SIModeTag && config.ScriptInjectionMode != SIModeSource {
-		return nil, fmt.Errorf("scriptInjectionMode is not valid")
+		h.log("scriptInjectionMode is not valid!")
+		h.config.ScriptInjection = false
+		h.configIsValid = false
 	}
 	// check if serverSideTrackingMode is valid
 	if config.ServerSideTrackingMode != SSTModeAll && config.ServerSideTrackingMode != SSTModeNotinjected {
-		return nil, fmt.Errorf("serverSideTrackingMode is not valid")
-	}
-
-	// construct
-	pluginHandler := &PluginHandler{
-		next:       next,
-		name:       name,
-		config:     *config,
-		scriptHtml: "",
-		LogHandler: log.New(os.Stdout, "", 0),
+		h.log("serverSideTrackingMode is not valid!")
+		h.config.ServerSideTracking = false
+		h.configIsValid = false
 	}
 
 	// build script html
-	scriptHtml, err := buildUmamiScript(&pluginHandler.config)
-	pluginHandler.scriptHtml = scriptHtml
+	scriptHtml, err := buildUmamiScript(&h.config)
+	h.scriptHtml = scriptHtml
 	if err != nil {
 		return nil, err
 	}
 
 	configJSON, _ := json.Marshal(config)
-	pluginHandler.log(fmt.Sprintf("config: %s", configJSON))
+	h.log(fmt.Sprintf("config: %s", configJSON))
 	if config.ScriptInjection {
-		pluginHandler.log(fmt.Sprintf("script: %s", scriptHtml))
+		h.log(fmt.Sprintf("script: %s", scriptHtml))
 	} else {
-		pluginHandler.log("script: scriptInjection is false")
+		h.log("script: scriptInjection is false")
 	}
 
-	return pluginHandler, nil
+	return h, nil
 }
 
 func (h *PluginHandler) log(message string) {
@@ -118,6 +126,12 @@ func (h *PluginHandler) log(message string) {
 }
 
 func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// check if config is valid
+	if !h.configIsValid {
+		h.next.ServeHTTP(rw, req)
+		return
+	}
+
 	// forwarding
 	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
 	if shouldForwardToUmami {
