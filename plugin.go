@@ -121,7 +121,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// forwarding
 	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
 	if shouldForwardToUmami {
-		h.log(fmt.Sprintf("Forward %s", req.URL.EscapedPath()))
+		// h.log(fmt.Sprintf("Forward %s", req.URL.EscapedPath()))
 		h.forwardToUmami(rw, req, pathAfter)
 		return
 	}
@@ -137,7 +137,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		h.next.ServeHTTP(myrw, req)
 
 		if myrw.Header().Get("Content-Type") == "text/html" {
-			h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
+			// h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
 			bytes := myrw.buffer.Bytes()
 			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
 			rw.Write(newBytes)
@@ -148,13 +148,12 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// server side tracking
 	shouldServerSideTrack := shouldServerSideTrack(req, &h.config, injected, h)
 	if shouldServerSideTrack {
-		h.log(fmt.Sprintf("injected: %t", injected))
-		h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
+		// h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
 		go buildAndSendTrackingRequest(req, &h.config)
 	}
 
 	if !injected {
-		h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
+		// h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
 		h.next.ServeHTTP(rw, req)
 	}
 }

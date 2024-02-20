@@ -123,11 +123,7 @@ func hostnameInDomains(req *http.Request, domains []string) bool {
 // check if server side tracking should be done.
 func shouldServerSideTrack(req *http.Request, config *Config, injected bool, h *PluginHandler) bool {
 	if config.ServerSideTracking && hostnameInDomains(req, config.Domains) {
-		h.log("server side tracking enabled, domain is in the list")
-		h.log(fmt.Sprintf("server side tracking mode: %s", config.ServerSideTrackingMode))
 		if config.ServerSideTrackingMode == SSTModeNotinjected {
-			h.log("server side tracking mode is notinjected")
-			h.log(fmt.Sprintf("tracking: %t", !injected))
 			return !injected
 		}
 		return true

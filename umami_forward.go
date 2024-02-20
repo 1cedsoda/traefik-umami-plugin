@@ -40,7 +40,7 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	// build URL
 	forwardUrl, err := h.getForwardUrl(pathAfter)
 	if err != nil {
-		h.log(fmt.Sprintf("h.getForwardUrl: %+v", err))
+		// h.log(fmt.Sprintf("h.getForwardUrl: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -48,7 +48,7 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	// build proxy request
 	proxyReq, err := newForwardRequest(req, forwardUrl)
 	if err != nil {
-		h.log(fmt.Sprintf("traefik_plugin_forward_request.NewForwardRequest: %+v", err))
+		// h.log(fmt.Sprintf("traefik_plugin_forward_request.NewForwardRequest: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -57,7 +57,7 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	client := &http.Client{}
 	proxyRes, err := client.Do(proxyReq)
 	if err != nil {
-		h.log(fmt.Sprintf("h.client.Do: %+v", err))
+		// h.log(fmt.Sprintf("h.client.Do: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +68,7 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	rw.WriteHeader(proxyRes.StatusCode)
 	body, err := io.ReadAll(proxyRes.Body)
 	if err != nil {
-		h.log(fmt.Sprintf("io.ReadAll: %+v", err))
+		// h.log(fmt.Sprintf("io.ReadAll: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
