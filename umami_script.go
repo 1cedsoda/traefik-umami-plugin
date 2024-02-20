@@ -8,16 +8,16 @@ import (
 
 const headRegexPattern = `</head>`
 
-var headRx = regexp.MustCompile(headRegexPattern)
+var headRegexp = regexp.MustCompile(headRegexPattern)
 
 // injects the umami script into the response head
-func injectIntoHeader(bytes []byte, script string) []byte {
-	rx := headRx.FindIndex(bytes)
+func regexReplaceSingle(bytes []byte, match *regexp.Regexp, replace string) []byte {
+	rx := match.FindIndex(bytes)
 	if len(rx) == 0 {
 		return bytes
 	}
 	// insert the script before the head tag
-	return append(bytes[:rx[0]], append([]byte(script), bytes[rx[0]:]...)...)
+	return append(bytes[:rx[0]], append([]byte(replace), bytes[rx[0]:]...)...)
 }
 
 // builds the umami script

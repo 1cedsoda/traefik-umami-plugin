@@ -13,7 +13,7 @@ Pros:
 # Roadmap
 - [X] script tag injection
 - [ ] script source injection
-- [ ] request forwarding
+- [X] request forwarding
 - [ ] server side tracking
 
 # Configuration
@@ -58,6 +58,8 @@ Inside the `traefik-umami-plugin` object the plugin can be configured with the f
 | `forwardPath` | umami   | string | Forwards requests with this url prefix to the `umamiHost`                      |
 
 The middleware can then be used in a router. Remember to reference the correct provider.
+
+TODO: The path forwarding to umani breaks the admin UI, becuase of special paths like `/_next`.
 
 ## Script Tag Injection
 

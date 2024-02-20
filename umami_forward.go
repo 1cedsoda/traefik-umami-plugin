@@ -2,7 +2,7 @@ package traefik_umami_plugin
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -41,67 +41,36 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	// build URL
 	forwardUrl, err := h.getForwardUrl(pathAfter)
 	if err != nil {
-		h.log(fmt.Sprintf("forward url error: %s", err))
+		h.log(fmt.Sprintf("h.getForwardUrl: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	h.log(fmt.Sprintf("forward url: %s", forwardUrl))
 
-	// build request
-	fReq, err := traefik_plugin_forward_request.NewForwardRequest(req, forwardUrl)
+	// build proxy request
+	proxyReq, err := traefik_plugin_forward_request.NewForwardRequest(req, forwardUrl)
 	if err != nil {
-		h.log(fmt.Sprintf("build request error: %+v", err))
+		h.log(fmt.Sprintf("traefik_plugin_forward_request.NewForwardRequest: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	h.log(fmt.Sprintf("build request: %+v", fReq))
 
-	// make request
-	fRes, err := h.client.Do(fReq)
+	// make proxy request
+	proxyRes, err := h.client.Do(proxyReq)
 	if err != nil {
-		h.log(fmt.Sprintf("do request error: %s", err))
+		h.log(fmt.Sprintf("h.client.Do: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	h.log(fmt.Sprintf("response: %+v", fRes))
 
-	// not 2XX -> return forward response
-	if fRes.StatusCode < http.StatusOK || fRes.StatusCode >= http.StatusMultipleChoices {
-		writeForwardResponse(rw, fRes)
-		return
-	}
-
-	// 2XX -> next
-	traefik_plugin_forward_request.OverrideHeaders(req.Header, fRes.Header)
-	h.next.ServeHTTP(rw, req)
-	return
-}
-
-// response to client after forwarding to umami
-func writeForwardResponse(rw http.ResponseWriter, fRes *http.Response) {
-	body, err := ioutil.ReadAll(fRes.Body)
-	if err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer fRes.Body.Close()
-
-	traefik_plugin_forward_request.CopyHeaders(rw.Header(), fRes.Header)
+	// build response
+	traefik_plugin_forward_request.CopyHeaders(rw.Header(), proxyRes.Header)
 	traefik_plugin_forward_request.RemoveHeaders(rw.Header(), traefik_plugin_forward_request.HopHeaders...)
-
-	// Grab the location header, if any.
-	redirectURL, err := fRes.Location()
-
+	rw.WriteHeader(proxyRes.StatusCode)
+	body, err := io.ReadAll(proxyRes.Body)
 	if err != nil {
-		if err != http.ErrNoLocation {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	} else if redirectURL.String() != "" {
-		// Set the location in our response if one was sent back.
-		rw.Header().Set("Location", redirectURL.String())
+		h.log(fmt.Sprintf("io.ReadAll: %+v", err))
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-
-	rw.WriteHeader(fRes.StatusCode)
-	_, _ = rw.Write(body)
+	rw.Write(body)
 }

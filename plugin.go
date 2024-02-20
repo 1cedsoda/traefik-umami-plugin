@@ -102,14 +102,12 @@ func (h *PluginHandler) log(message string) {
 }
 
 func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	h.log(fmt.Sprintf("serve http %s", req.URL.EscapedPath()))
 
 	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
 
 	// forwarding
 	if shouldForwardToUmami {
-		h.log(fmt.Sprintf("shouldForwardToUmami: %t", shouldForwardToUmami))
-		h.log(fmt.Sprintf("pathAfter: %s", pathAfter))
+		h.log(fmt.Sprintf("Forward %s", req.URL.EscapedPath()))
 		h.forwardToUmami(rw, req, pathAfter)
 		return
 	}
@@ -117,20 +115,22 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// script injection
 	if h.config.ScriptInjection {
 		// intercept body
-		rxrw := &responseWriter{
+		myrw := &responseWriter{
 			buffer:         &bytes.Buffer{},
 			ResponseWriter: rw,
 		}
-		h.next.ServeHTTP(rxrw, req)
+		h.next.ServeHTTP(myrw, req)
 
-		if rw.Header().Get("Content-Type") == "text/html" {
-			bytes := rxrw.buffer.Bytes()
-			newBytes := injectIntoHeader(bytes, h.scriptHtml)
+		if myrw.Header().Get("Content-Type") == "text/html" {
+			h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
+			bytes := myrw.buffer.Bytes()
+			newBytes := regexReplaceSingle(bytes, headRegexp, h.scriptHtml)
 			rw.Write(newBytes)
 		}
 		return
 	}
 
+	h.log(fmt.Sprintf("Ignore %s", req.URL.EscapedPath()))
 	h.next.ServeHTTP(rw, req)
 }
 

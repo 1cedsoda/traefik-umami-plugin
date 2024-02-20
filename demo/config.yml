@@ -16,6 +16,9 @@ http:
               replacement: "$1<br>"
             - regex: ([\S\s]*)
               replacement: "<!DOCTYPE html><html><head></head><body>$1</body></html>"
+          monitor:
+            types:
+              - text/plain
 
     plain-to-html-header:
       headers:
