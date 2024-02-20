@@ -62,6 +62,8 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 		html += fmt.Sprintf("el.setAttribute('data-website-id', '%s');", h.config.WebsiteId)
 		if h.config.AutoTrack {
 			html += "el.setAttribute('data-auto-track', 'true');"
+		} else {
+			html += "el.setAttribute('data-auto-track', 'false');"
 		}
 		if h.config.DoNotTrack {
 			html += "el.setAttribute('data-do-not-track', 'true');"
@@ -87,6 +89,8 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 		html += fmt.Sprintf(" data-website-id='%s'", h.config.WebsiteId)
 		if h.config.AutoTrack {
 			html += " data-auto-track='true'"
+		} else {
+			html += " data-auto-track='false'"
 		}
 		if h.config.DoNotTrack {
 			html += " data-do-not-track='true'"
