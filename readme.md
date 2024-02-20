@@ -81,3 +81,19 @@ There are two modes for script injection:
 - `tag`: Injects the script tag with `src="/<forwardPath>/script.js"` into the response
 - `source`: Downloads & injects the script source into the response
 
+## Server Side Tracking
+
+The plugin can be configured to send tracking events to the umami sevrer as requests come in. This removes the need for JavaScript on the client side.
+It also allows to track pages that are not `text/html` or are not rendered by a browser.
+
+However, it is not possible to track `title` or `display` values, as they are not available on the server side.
+
+SST can be combined with script injection, but it is recommended to turn of `autoTrack` to avoid double tracking.
+
+Tracked events have the name `traefik`.
+
+The `domains` configuration is considered for SST as well. If domains is empty, all hosts are tracked, otherwise the host must be in the list. The port of the host is ignored.
+
+| key                  | default | type   | description                  |
+| -------------------- | ------- | ------ | ---------------------------- |
+| `serverSideTracking` | `false` | `bool` | Enables server side tracking |

@@ -24,6 +24,7 @@ type Config struct {
 	EvadeGoogleTagManager bool     `json:"evadeGoogleTagManager"`
 	ScriptInjection       bool     `json:"scriptInjection"`
 	ScriptInjectionMode   string   `json:"scriptInjectionMode"`
+	ServerSideTracking    bool     `json:"serverSideTracking"`
 }
 
 // CreateConfig creates the default plugin configuration.
@@ -39,6 +40,7 @@ func CreateConfig() *Config {
 		EvadeGoogleTagManager: false,
 		ScriptInjection:       true,
 		ScriptInjectionMode:   "tag",
+		ServerSideTracking:    false,
 	}
 }
 
@@ -106,13 +108,23 @@ func (h *PluginHandler) log(message string) {
 
 func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
-	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
-
 	// forwarding
+	shouldForwardToUmami, pathAfter := isUmamiForwardPath(req, &h.config)
 	if shouldForwardToUmami {
 		h.log(fmt.Sprintf("Forward %s", req.URL.EscapedPath()))
 		h.forwardToUmami(rw, req, pathAfter)
 		return
+	}
+
+	// server side tracking
+	shouldServerSideTrack := shouldServerSideTrack(req, &h.config)
+	if shouldServerSideTrack {
+		h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
+		tReq, err := buildTrackingRequest(req, &h.config)
+		if err != nil {
+			h.log(fmt.Sprintf("h.buildTrackingRequest: %s", err))
+		}
+		h.sendTrackingRequest(tReq)
 	}
 
 	// script injection
@@ -133,7 +145,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	h.log(fmt.Sprintf("Ignore %s", req.URL.EscapedPath()))
+	h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
 	h.next.ServeHTTP(rw, req)
 }
 

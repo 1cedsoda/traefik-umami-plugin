@@ -17,4 +17,5 @@ testData:
   evadeGoogleTagManager: false
   scriptInjection: true
   scriptInjectionMode: "tag"
+  serverSideTracking: false
 
