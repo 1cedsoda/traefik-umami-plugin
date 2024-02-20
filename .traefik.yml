@@ -1,10 +1,10 @@
-displayName: Umami Plugin
+displayName: Umami Analytics
 type: middleware
 iconPath: .assets/icon.png
 
 import: github.com/1cedsoda/traefik-umami-plugin
 
-summary: 'Plugin for Umami Analytics'
+summary: 'Integrate Umami into any web service. Request forwarding, script injection and server side tracking.'
 
 testData:
   forwardPath: umami
