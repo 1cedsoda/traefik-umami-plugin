@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	traefik_plugin_forward_request "github.com/kzmake/traefik-plugin-forward-request"
 )
 
 type SendPayload struct {
@@ -72,9 +70,9 @@ func buildTrackingRequest(clientReq *http.Request, config *Config) (*http.Reques
 
 	// set headers
 	req.Header.Set("Content-Type", "application/json")
-	traefik_plugin_forward_request.CopyHeaders(req.Header, clientReq.Header)
-	traefik_plugin_forward_request.RemoveHeaders(req.Header, traefik_plugin_forward_request.HopHeaders...)
-	traefik_plugin_forward_request.WriteXForwardedHeaders(req.Header, clientReq)
+	copyHeaders(req.Header, clientReq.Header)
+	removeHeaders(req.Header, hopHeaders...)
+	writeXForwardedHeaders(req.Header, clientReq)
 
 	return req, nil
 }

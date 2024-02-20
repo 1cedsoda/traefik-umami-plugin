@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-
-	traefik_plugin_forward_request "github.com/kzmake/traefik-plugin-forward-request"
 )
 
 // check if the requested URL should be forwaeded to umami
@@ -48,7 +46,7 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	}
 
 	// build proxy request
-	proxyReq, err := traefik_plugin_forward_request.NewForwardRequest(req, forwardUrl)
+	proxyReq, err := newForwardRequest(req, forwardUrl)
 	if err != nil {
 		h.log(fmt.Sprintf("traefik_plugin_forward_request.NewForwardRequest: %+v", err))
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -64,8 +62,8 @@ func (h *PluginHandler) forwardToUmami(rw http.ResponseWriter, req *http.Request
 	}
 
 	// build response
-	traefik_plugin_forward_request.CopyHeaders(rw.Header(), proxyRes.Header)
-	traefik_plugin_forward_request.RemoveHeaders(rw.Header(), traefik_plugin_forward_request.HopHeaders...)
+	copyHeaders(rw.Header(), proxyRes.Header)
+	removeHeaders(rw.Header(), hopHeaders...)
 	rw.WriteHeader(proxyRes.StatusCode)
 	body, err := io.ReadAll(proxyRes.Body)
 	if err != nil {
