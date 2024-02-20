@@ -12,12 +12,13 @@ import (
 
 // check if the requested URL should be forwaeded to umami
 // based on the ForwardPath (eg. /umami)
+// only forwards /api/send and /script.js
 func isUmamiForwardPath(req *http.Request, config *Config) (bool, string) {
 	currentPath := req.URL.EscapedPath()
-	pathRegex := fmt.Sprintf(`^\/%s(\/)?(.+)?`, config.ForwardPath)
+	pathRegex := fmt.Sprintf(`\/%s\/((?:script\.js)|(?:api\/send))`, config.ForwardPath)
 	match := regexp.MustCompile(pathRegex).FindStringSubmatch(currentPath)
 	if match != nil {
-		pathAfter := match[2]
+		pathAfter := match[1]
 		return true, pathAfter
 	}
 	return false, ""

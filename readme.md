@@ -51,15 +51,27 @@ http:
     websiteId = "d4617504-241c-4797-8eab-5939b367b3ad"
 ```
 Inside the `traefik-umami-plugin` object the plugin can be configured with the following options:
-| key           | default | type     | description                                                                    |
-| ------------- | ------- | -------- | ------------------------------------------------------------------------------ |
-| `umamiHost`   | -       | `string` | Umami server host, reachable from within traefik (container). eg. `umami:3000` |
-| `websiteId`   | -       | `string` | Website ID as configured in umami.                                             |
-| `forwardPath` | `umami` | `string` | Forwards requests with this url prefix to the `umamiHost`                      |
+
+| key         | default | type     | description                                                                    |
+| ----------- | ------- | -------- | ------------------------------------------------------------------------------ |
+| `umamiHost` | -       | `string` | Umami server host, reachable from within traefik (container). eg. `umami:3000` |
+| `websiteId` | -       | `string` | Website ID as configured in umami.                                             |
 
 The middleware can then be used in a router. Remember to reference the correct provider.
 
-TODO: The path forwarding to umani breaks the admin UI, becuase of special paths like `/_next`.
+## Request Forwarding
+
+Request forwarding allows for the analytics related requests to be hosted on the same domain as the web service. This makes it harder to block by adblockers.
+Request forwarding is always enabled.
+
+| key           | default | type     | description                                               |
+| ------------- | ------- | -------- | --------------------------------------------------------- |
+| `forwardPath` | `umami` | `string` | Forwards requests with this url prefix to the `umamiHost` |
+
+Requests with a matching url are forwarded to the `umamiHost`. The path is preserved.
+
+- `<forwardPath>/script.js` -> `<umamiHost>/script.js`
+- `<forwardPath>/api/send` -> `<umamiHost>/api/send`
 
 ## Script Injection
 
