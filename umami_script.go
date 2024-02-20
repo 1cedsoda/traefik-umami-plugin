@@ -52,6 +52,7 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 		html += "<script>"
 		html += "(function () {"
 		html += "var el = document.createElement('script');"
+		html += fmt.Sprintf("el.setAttribute('data-host-url', '%s');", h.config.ForwardPath)
 		if h.config.ScriptInjectionMode == "tag" {
 			html += fmt.Sprintf("el.setAttribute('src', '%s');", src)
 		} else if h.config.ScriptInjectionMode == "source" {
@@ -83,6 +84,7 @@ func (h *PluginHandler) buildUmamiScript() (string, error) {
 		html += "<script"
 		html += " async"
 		html += " defer"
+		html += fmt.Sprintf(" data-host-url='/%s'", h.config.ForwardPath)
 		if h.config.ScriptInjectionMode == "tag" {
 			html += fmt.Sprintf(" src='%s'", src)
 		}
@@ -136,10 +138,6 @@ func (h *PluginHandler) downloadScript(config *Config, ctx context.Context) (str
 		h.log(fmt.Sprintf("io.ReadAll: %+v", err))
 		return "", err
 	}
-
-	// modeify api call url
-	forwardedApi := fmt.Sprintf(`/%s/api`, config.ForwardPath)
-	body = []byte(strings.ReplaceAll(string(body), "/api", forwardedApi))
 
 	// return the script
 	return string(body), nil
