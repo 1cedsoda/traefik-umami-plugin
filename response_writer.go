@@ -31,7 +31,10 @@ func (w *ResponseWriter) Read() []byte {
 // Always uncompressed
 // Error if encoding is not supported.
 func (w *ResponseWriter) ReadDecoded() ([]byte, error) {
-	encoding := w.GetContentEncoding()
+	encoding, err := w.GetContentEncoding()
+	if err != nil {
+		return nil, err
+	}
 	return Decode(w.buffer, encoding)
 }
 
@@ -54,7 +57,7 @@ func (w *ResponseWriter) WriteEncoded(plain []byte, encoding *Encoding) (int, er
 }
 
 // Content-Encoding header.
-func (w *ResponseWriter) GetContentEncoding() *Encoding {
+func (w *ResponseWriter) GetContentEncoding() (*Encoding, error) {
 	str := w.Header().Get("Content-Encoding")
 	return ParseEncoding(str)
 }

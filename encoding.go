@@ -1,6 +1,8 @@
 package traefik_umami_plugin
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -10,11 +12,49 @@ type Encoding struct {
 	q    float64
 }
 
-func ParseEncoding(encoding string) *Encoding {
-	return &Encoding{
-		name: encoding,
-		q:    1.0,
+const encodingRegex = `(?:([a-z*]+)(?:\;?q=(\d(?:\.\d)?))?)`
+
+var encodingRegexp = regexp.MustCompile(encodingRegex)
+
+var IdentityEncoding = &Encoding{name: Identity, q: 1.0}
+
+var IdentityEncodings = &Encodings{encodings: []Encoding{*IdentityEncoding}}
+
+var SupportedEncodingNames = []string{Identity, Gzip, Deflate}
+
+func GetSupportedEncodings(q float64) *Encodings {
+	result := make([]Encoding, 0, len(SupportedEncodingNames))
+	for _, name := range SupportedEncodingNames {
+		result = append(result, Encoding{name: name, q: q})
 	}
+
+	return &Encodings{encodings: result}
+}
+
+func ParseEncoding(encoding string) (*Encoding, error) {
+	matches := encodingRegexp.FindStringSubmatch(encoding)
+
+	if len(matches) < 2 {
+		return nil, fmt.Errorf("no matches")
+	}
+
+	// get q
+	q := 1.0
+	if matches[2] != "" {
+		// if is float
+		if strings.Contains(matches[2], ".") {
+			q, _ = strconv.ParseFloat(matches[2], 64)
+		} else {
+			// if is int
+			qInt, _ := strconv.ParseInt(matches[2], 10, 64)
+			q = float64(qInt) / 100
+		}
+	}
+
+	return &Encoding{
+		name: matches[1],
+		q:    q,
+	}, nil
 }
 
 type Encodings struct {
@@ -22,16 +62,36 @@ type Encodings struct {
 }
 
 func ParseEncodings(acceptEncoding string) *Encodings {
-	encodingList := strings.Split(acceptEncoding, ",")
-	result := make([]Encoding, 0, len(encodingList))
+	// remove any spaces
+	acceptEncoding = strings.ReplaceAll(acceptEncoding, " ", "")
 
-	for _, encoding := range encodingList {
-		split := strings.Split(strings.TrimSpace(encoding), ";q=")
-		q := 1.0
-		if len(split) > 1 {
-			q, _ = strconv.ParseFloat(split[1], 64)
+	// split by separator
+	encodingStringList := strings.Split(acceptEncoding, ",")
+
+	// parse
+	result := make([]Encoding, 0, len(encodingStringList))
+	for _, encodingString := range encodingStringList {
+		if encodingString == "" {
+			continue
 		}
-		result = append(result, Encoding{name: split[0], q: q})
+
+		encoding, err := ParseEncoding(encodingString)
+		if err != nil {
+			continue
+		}
+
+		// if * save index
+		if encoding.name == "*" {
+			// append all supported with asterisk q
+			for _, name := range SupportedEncodingNames {
+				result = append(result, Encoding{name: name, q: encoding.q})
+			}
+		}
+		result = append(result, *encoding)
+	}
+
+	if len(result) == 0 {
+		return IdentityEncodings
 	}
 
 	return &Encodings{encodings: result}
@@ -44,7 +104,7 @@ func (ae *Encodings) String() string {
 		result = append(result, encoding.name)
 	}
 
-	return strings.Join(result, ",")
+	return strings.Join(result, ", ")
 }
 
 func (ae *Encodings) FilterSupported() *Encodings {
@@ -52,7 +112,8 @@ func (ae *Encodings) FilterSupported() *Encodings {
 
 	for _, encoding := range ae.encodings {
 		switch encoding.name {
-		case Gzip, Deflate, Identity:
+		// * added all encodings in ParseEncodings, we still keep it here to prevent unexpected behavior
+		case Gzip, Deflate, Identity, "*":
 			result = append(result, encoding)
 		}
 	}

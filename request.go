@@ -10,14 +10,13 @@ type Request struct {
 }
 
 func (req *Request) SetSupportedEncoding() {
-	acceptEncoding := ParseEncodings(req.Header.Get("Accept-Encoding"))
-	supported := acceptEncoding.FilterSupported().String()
-	req.Header.Set("Accept-Encoding", supported)
+	supported := req.GetSupportedEncodings()
+	req.Header.Set("Accept-Encoding", supported.String())
 }
 
-func (req *Request) GetPreferredSupportedEncoding() *Encoding {
+func (req *Request) GetSupportedEncodings() *Encodings {
 	acceptEncoding := req.Header.Get("Accept-Encoding")
-	return ParseEncodings(acceptEncoding).FilterSupported().GetPreferred()
+	return ParseEncodings(acceptEncoding).FilterSupported()
 }
 
 func (req *Request) CouldBeInjectable() bool {

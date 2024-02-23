@@ -146,6 +146,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if h.config.ScriptInjection && myReq.CouldBeInjectable() {
 		// intercept body
 		myRw := NewResponseWriter(rw)
+		encoding := myReq.GetSupportedEncodings().GetPreferred()
 		myReq.SetSupportedEncoding()
 		h.next.ServeHTTP(myRw, &myReq.Request)
 
@@ -154,7 +155,7 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			body, err := myRw.ReadDecoded()
 			if err != nil {
 				newBody := InsertAtBodyEnd(body, h.scriptHtml)
-				myRw.WriteEncoded(newBody, myReq.GetPreferredSupportedEncoding())
+				myRw.WriteEncoded(newBody, encoding)
 				injected = true
 			}
 		}
