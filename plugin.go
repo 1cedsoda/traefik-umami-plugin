@@ -142,21 +142,21 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// script injection
 	var injected bool = false
-	if h.config.ScriptInjection {
+	myReq := &Request{Request: *req}
+	if h.config.ScriptInjection && myReq.CouldBeInjectable() {
 		// intercept body
-		myrw := &responseWriter{
-			buffer:         &bytes.Buffer{},
-			ResponseWriter: rw,
-		}
-		myrw.Header().Set("Accept-Encoding", "identity")
-		h.next.ServeHTTP(myrw, req)
+		myRw := NewResponseWriter(rw)
+		myReq.SetSupportedEncoding()
+		h.next.ServeHTTP(myRw, &myReq.Request)
 
-		if myrw.Header().Get("Content-Type") == "text/html" {
+		if myRw.IsInjectable() {
 			// h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
-			bytes := myrw.buffer.Bytes()
-			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
-			rw.Write(newBytes)
-			injected = true
+			body, err := myRw.ReadDecoded()
+			if err != nil {
+				newBody := InsertAtBodyEnd(body, h.scriptHtml)
+				myRw.WriteEncoded(newBody, myReq.GetPreferredSupportedEncoding())
+				injected = true
+			}
 		}
 	}
 
@@ -176,9 +176,4 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 type responseWriter struct {
 	buffer *bytes.Buffer
 	http.ResponseWriter
-}
-
-func (w *responseWriter) Write(p []byte) (int, error) {
-	w.buffer.Reset()
-	return w.buffer.Write(p)
 }
