@@ -2,6 +2,7 @@ package traefik_umami_plugin
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 )
 
@@ -47,12 +48,14 @@ func (w *ResponseWriter) Write(p []byte) (int, error) {
 // Write body bytes
 // Compresses the body to the target encoding.
 func (w *ResponseWriter) WriteEncoded(plain []byte, encoding *Encoding) (int, error) {
+	size := len(plain)
 	encoded, err := Encode(plain, encoding)
 	if err != nil {
 		return 0, err
 	}
 	w.Write(encoded)
 	w.SetContentEncoding(encoding)
+	w.SetContentLength(size)
 	return len(plain), nil
 }
 
@@ -65,4 +68,9 @@ func (w *ResponseWriter) GetContentEncoding() (*Encoding, error) {
 // Set Content-Encoding header.
 func (w *ResponseWriter) SetContentEncoding(encoding *Encoding) {
 	w.Header().Set("Content-Encoding", encoding.name)
+}
+
+// set content size.
+func (w *ResponseWriter) SetContentLength(size int) {
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", size))
 }

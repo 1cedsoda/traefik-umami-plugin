@@ -24,9 +24,13 @@ http:
       headers:
         customResponseHeaders:
           Content-Type: "text/html"
+
+    compress:
+      compress: true
           
     plain-to-html:
       chain:
         middlewares:
-          - plain-to-html-body
           - plain-to-html-header
+          - plain-to-html-body
+          - compress

@@ -150,14 +150,17 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		myReq.SetSupportedEncoding()
 		h.next.ServeHTTP(myRw, &myReq.Request)
 
+		// check if response is injectable
 		if myRw.IsInjectable() {
 			// h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
 			body, err := myRw.ReadDecoded()
 			if err != nil {
-				newBody := InsertAtBodyEnd(body, h.scriptHtml)
-				myRw.WriteEncoded(newBody, encoding)
-				injected = true
+				h.log(fmt.Sprintf("Error: %s", err))
 			}
+			newBody := InsertAtBodyEnd(body, h.scriptHtml)
+			myRw.WriteEncoded(newBody, encoding)
+			rw.Write(myRw.Read())
+			injected = true
 		}
 	}
 
