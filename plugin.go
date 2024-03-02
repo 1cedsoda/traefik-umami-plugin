@@ -142,43 +142,46 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// script injection
 	var injected bool = false
-	if h.config.ScriptInjection {
+	myReq := &Request{Request: *req}
+	myRw := NewResponseWriter(rw)
+	if h.config.ScriptInjection && myReq.CouldBeInjectable() {
 		// intercept body
-		myrw := &responseWriter{
-			buffer:         &bytes.Buffer{},
-			ResponseWriter: rw,
-		}
-		myrw.Header().Set("Accept-Encoding", "identity")
-		h.next.ServeHTTP(myrw, req)
+		encoding := myReq.GetSupportedEncodings(h).GetPreferred()
+		myReq.SetSupportedEncoding(h)
+		h.next.ServeHTTP(myRw, &myReq.Request)
 
-		if myrw.Header().Get("Content-Type") == "text/html" {
-			// h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
-			bytes := myrw.buffer.Bytes()
-			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
-			rw.Write(newBytes)
+		// check if response is injectable
+		if myRw.IsInjectable() {
+			body, err := myRw.ReadDecoded(h)
+			if err != nil {
+				h.log(fmt.Sprintf("Error: %s", err))
+			}
+			newBody := InsertAtBodyEnd(body, h.scriptHtml)
+			h.log(fmt.Sprintf("newBody: %s", newBody))
+			h.log(fmt.Sprintf("encoding: %+v", encoding))
+			myRw.WriteEncoded(newBody, encoding)
+			rw.Write(myRw.Read())
+
 			injected = true
+			h.next.ServeHTTP(rw, req)
+			return
 		}
 	}
 
-	// server side tracking
-	shouldServerSideTrack := shouldServerSideTrack(req, &h.config, injected, h)
-	if shouldServerSideTrack {
-		// h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
-		go buildAndSendTrackingRequest(req, &h.config)
-	}
+	// // server side tracking
+	// shouldServerSideTrack := shouldServerSideTrack(req, &h.config, injected, h)
+	// if shouldServerSideTrack {
+	// 	// h.log(fmt.Sprintf("Track %s", req.URL.EscapedPath()))
+	// 	go buildAndSendTrackingRequest(req, &h.config)
+	// }
 
-	if !injected {
-		// h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
-		h.next.ServeHTTP(rw, req)
-	}
+	// if !injected {
+	// 	// h.log(fmt.Sprintf("Continue %s", req.URL.EscapedPath()))
+	// 	h.next.ServeHTTP(rw, req)
+	// }
 }
 
 type responseWriter struct {
 	buffer *bytes.Buffer
 	http.ResponseWriter
-}
-
-func (w *responseWriter) Write(p []byte) (int, error) {
-	w.buffer.Reset()
-	return w.buffer.Write(p)
 }
