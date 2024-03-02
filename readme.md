@@ -17,6 +17,7 @@ Pros:
 - [X] Script Source Injection - Inject the `script.js` as raw JS code
 - [X] Request Forwarding - Forward requests behind `forwardingPath` to th unami server
 - [X] Server Side Tracking - Trigger tracking event from the plugin, No JS needed.
+- [ ] Injection when compressed - [Issue](https://github.com/1cedsoda/traefik-umami-plugin/issues/2), [PR in progress](https://github.com/1cedsoda/traefik-umami-plugin/pull/3)
 
 # Installation
 To [add this plugin to traefik](https://plugins.traefik.io/install) reference this repository as a plugin in the static config.
