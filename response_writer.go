@@ -31,8 +31,8 @@ func (w *ResponseWriter) Read() []byte {
 // Body bytes
 // Always uncompressed
 // Error if encoding is not supported.
-func (w *ResponseWriter) ReadDecoded() ([]byte, error) {
-	encoding, err := w.GetContentEncoding()
+func (w *ResponseWriter) ReadDecoded(h *PluginHandler) ([]byte, error) {
+	encoding, err := w.GetContentEncoding(h)
 	if err != nil {
 		return nil, err
 	}
@@ -53,21 +53,21 @@ func (w *ResponseWriter) WriteEncoded(plain []byte, encoding *Encoding) (int, er
 	if err != nil {
 		return 0, err
 	}
-	w.Write(encoded)
 	w.SetContentEncoding(encoding)
 	w.SetContentLength(size)
+	w.Write(encoded)
 	return len(plain), nil
 }
 
 // Content-Encoding header.
-func (w *ResponseWriter) GetContentEncoding() (*Encoding, error) {
+func (w *ResponseWriter) GetContentEncoding(h *PluginHandler) (*Encoding, error) {
 	str := w.Header().Get("Content-Encoding")
-	return ParseEncoding(str)
+	return ParseEncoding(str, h)
 }
 
 // Set Content-Encoding header.
 func (w *ResponseWriter) SetContentEncoding(encoding *Encoding) {
-	w.Header().Set("Content-Encoding", encoding.name)
+	// w.Header().Set("Content-Encoding", encoding.name)
 }
 
 // set content size.

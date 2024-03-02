@@ -33,4 +33,4 @@ http:
         middlewares:
           - plain-to-html-header
           - plain-to-html-body
-          - compress
+          # - compress

@@ -31,7 +31,11 @@ func GetSupportedEncodings(q float64) *Encodings {
 	return &Encodings{encodings: result}
 }
 
-func ParseEncoding(encoding string) (*Encoding, error) {
+func ParseEncoding(encoding string, h *PluginHandler) (*Encoding, error) {
+	if encoding == "" {
+		return &Encoding{name: Identity, q: 1.0}, nil
+	}
+
 	matches := encodingRegexp.FindStringSubmatch(encoding)
 
 	if len(matches) < 2 {
@@ -61,7 +65,7 @@ type Encodings struct {
 	encodings []Encoding
 }
 
-func ParseEncodings(acceptEncoding string) *Encodings {
+func ParseEncodings(acceptEncoding string, h *PluginHandler) *Encodings {
 	// remove any spaces
 	acceptEncoding = strings.ReplaceAll(acceptEncoding, " ", "")
 
@@ -75,7 +79,7 @@ func ParseEncodings(acceptEncoding string) *Encodings {
 			continue
 		}
 
-		encoding, err := ParseEncoding(encodingString)
+		encoding, err := ParseEncoding(encodingString, h)
 		if err != nil {
 			continue
 		}

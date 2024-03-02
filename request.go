@@ -9,14 +9,14 @@ type Request struct {
 	http.Request
 }
 
-func (req *Request) SetSupportedEncoding() {
-	supported := req.GetSupportedEncodings()
+func (req *Request) SetSupportedEncoding(h *PluginHandler) {
+	supported := req.GetSupportedEncodings(h)
 	req.Header.Set("Accept-Encoding", supported.String())
 }
 
-func (req *Request) GetSupportedEncodings() *Encodings {
+func (req *Request) GetSupportedEncodings(h *PluginHandler) *Encodings {
 	acceptEncoding := req.Header.Get("Accept-Encoding")
-	return ParseEncodings(acceptEncoding).FilterSupported()
+	return ParseEncodings(acceptEncoding, h).FilterSupported()
 }
 
 func (req *Request) CouldBeInjectable() bool {
