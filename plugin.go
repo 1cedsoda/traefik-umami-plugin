@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -151,12 +152,17 @@ func (h *PluginHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		myrw.Header().Set("Accept-Encoding", "identity")
 		h.next.ServeHTTP(myrw, req)
 
-		if myrw.Header().Get("Content-Type") == "text/html" {
+		if strings.HasPrefix(myrw.Header().Get("Content-Type"), "text/html") {
 			// h.log(fmt.Sprintf("Inject %s", req.URL.EscapedPath()))
-			bytes := myrw.buffer.Bytes()
-			newBytes := regexReplaceSingle(bytes, insertBeforeRegex, h.scriptHtml)
-			rw.Write(newBytes)
-			injected = true
+			origBytes := myrw.buffer.Bytes()
+			newBytes := regexReplaceSingle(origBytes, insertBeforeRegex, h.scriptHtml)
+			if !bytes.Equal(origBytes, newBytes) {
+				_, err := rw.Write(newBytes)
+				if err != nil {
+					h.log(err.Error())
+				}
+				injected = true
+			}
 		}
 	}
 
@@ -179,6 +185,5 @@ type responseWriter struct {
 }
 
 func (w *responseWriter) Write(p []byte) (int, error) {
-	w.buffer.Reset()
 	return w.buffer.Write(p)
 }
