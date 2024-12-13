@@ -98,8 +98,8 @@ Request forwarding is always enabled.
 
 Requests with a matching URL are forwarded to the `umamiHost`. The path is preserved.
 
-- `<forwardPath>/script.js` -> `<umamiHost>/script.js`
-- `<forwardPath>/api/send` -> `<umamiHost>/api/send`
+- `https://mywebsite.example/<forwardPath>/script.js` -> `<umamiHost>/script.js`
+- `https://mywebsite.example/<forwardPath>/api/send` -> `<umamiHost>/api/send`
 
 ## Script Injection
 
